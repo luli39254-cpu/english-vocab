@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>📚 英语背单词</title>
-    <!-- 引入 SheetJS 用于解析 Excel -->
+    <!-- SheetJS 用于解析 Excel -->
     <script src="https://cdn.sheetjs.com/xlsx-0.20.0/package/dist/xlsx.full.min.js"></script>
     <style>
         *{margin:0;padding:0;box-sizing:border-box}
@@ -18,7 +18,7 @@
         .word-display{font-size:38px;font-weight:bold;color:#2c3e50;margin:10px 0}
         .meaning-display{font-size:20px;color:#27ae60;margin:8px 0}
         .example-display{font-size:14px;color:#7f8c8d;font-style:italic;margin:8px 0}
-        .btn{padding:10px 16px;border:none;border-radius:10px;font-size:14px;cursor:pointer;margin:4px;color:white;display:inline-block}
+        .btn{padding:10px 16px;border:none;border-radius:10px;font-size:14px;cursor:pointer;margin:4px;color:white;display:inline-block;transition:0.2s}
         .btn:active{transform:scale(0.95)}
         .btn-blue{background:#3498db}.btn-green{background:#2ecc71}.btn-orange{background:#f39c12}.btn-red{background:#e74c3c}.btn-purple{background:#9b59b6}
         .btn-row{display:flex;flex-wrap:wrap;justify-content:center;gap:8px;margin-top:15px}
@@ -27,8 +27,7 @@
         .option-btn.wrong{background:#e74c3c;color:white;border-color:#e74c3c}
         .option-btn:disabled{pointer-events:none;opacity:0.8}
         .progress-text{font-size:12px;color:#95a5a6;margin:8px 0}
-        .badge{display:inline-block;padding:4px 10px;border-radius:12px;font-size:12px}
-        .badge-star{background:#fff3cd;color:#f39c12}
+        .badge{display:inline-block;padding:4px 10px;border-radius:12px;font-size:12px;background:#fff3cd;color:#f39c12}
         .list-item{padding:12px;border-bottom:1px solid #f0f0f0;font-size:15px;display:flex;justify-content:space-between;align-items:center}
         .hidden{display:none!important}
         input,textarea{width:100%;padding:12px;margin:8px 0;border:1px solid #ddd;border-radius:10px;font-size:16px}
@@ -55,15 +54,26 @@
         <div id="study-panel">
             <div class="card">
                 <div id="collect-badge"></div>
-                <div class="word-display" id="study-word">--</div>
+                <div style="display:flex;align-items:center;justify-content:center;gap:10px;">
+                    <div class="word-display" id="study-word">--</div>
+                    <button class="btn btn-blue" style="padding:8px 12px;font-size:18px;" onclick="speakWord()">🔊</button>
+                </div>
                 <div class="meaning-display" id="study-meaning"></div>
-                <div class="example-display" id="study-example"></div>
+                <div style="display:flex;align-items:center;justify-content:center;gap:10px;">
+                    <div class="example-display" id="study-example"></div>
+                    <button class="btn btn-purple" style="padding:6px 10px;font-size:14px;" onclick="speakExample()">🔊</button>
+                </div>
                 <div class="progress-text" id="study-progress"></div>
                 <div class="btn-row">
                     <button class="btn btn-blue" onclick="prevWord()">⬅</button>
                     <button class="btn btn-orange" id="collect-btn" onclick="toggleCollect()">⭐</button>
                     <button class="btn btn-green" onclick="markLearned()">✔</button>
                     <button class="btn btn-blue" onclick="nextWord()">➡</button>
+                </div>
+                <div style="margin-top:10px;">
+                    <label style="font-size:13px;color:#7f8c8d;">
+                        <input type="checkbox" id="auto-speak" onchange="toggleAutoSpeak()"> 切换单词时自动朗读
+                    </label>
                 </div>
             </div>
         </div>
@@ -75,12 +85,11 @@
                 <input type="text" id="new-meaning" placeholder="中文释义 (如: 你好)">
                 <textarea id="new-example" rows="2" placeholder="例句 (可选)"></textarea>
                 <button class="btn btn-green" onclick="addWord()">保存单词</button>
-
                 <hr>
                 <h3>📥 导入Excel批量添加</h3>
                 <p style="color:#95a5a6;font-size:13px;">Excel格式：A列单词、B列释义、C列例句（第一行为表头）</p>
                 <div class="file-upload">
-                    <input type="file" id="excel-file" accept=".xlsx, .xls, .csv">
+                    <input type="file" id="excel-file" accept=".xlsx,.xls,.csv">
                     <button class="btn btn-blue" onclick="importExcel()">导入</button>
                 </div>
                 <p id="import-status" style="margin-top:10px;font-size:13px;"></p>
@@ -119,140 +128,316 @@
     </div>
 
     <script>
-        // ==================== 内置 200 词 (紧凑数组) ====================
+        // ==================== 内置200词库 ====================
         const W = ["abandon","ability","abroad","absence","absolute","absorb","abstract","abundant","academic","accelerate","accept","access","accompany","accomplish","account","accurate","accuse","achieve","acknowledge","acquire","adapt","adequate","adjust","administration","admire","admit","adopt","advance","advantage","adventure","advertise","advice","affair","affect","afford","agenda","aggressive","agreement","agriculture","aid","aim","alert","allocate","alter","alternative","amaze","ambition","analyse","ancestor","anchor","ancient","anniversary","announce","annual","anticipate","anxiety","apparent","appeal","appetite","appliance","application","apply","appointment","appreciate","approach","appropriate","approve","arise","arrange","arrest","artificial","aspect","assemble","assess","assign","assist","associate","assume","atmosphere","attach","attain","attempt","attend","attitude","attract","audience","authority","available","avenue","average","avoid","aware","backup","bacteria","balance","ban","barrier","battle","behalf","behave","belong","bend","benefit","betray","billion","bind","blade","blame","blank","blast","blend","bless","block","bloom","board","boast","bond","boom","border","bore","borrow","bounce","bound","brand","breach","breakthrough","breed","brief","broadcast","budget","burden","burst","cabinet","calculate","campaign","capable","capacity","capture","carbon","career","cargo","catalogue","category","cease","challenge","champion","channel","character","charge","charity","chart","chase","chemical","chief","chronic","circumstance","citizen","civil","claim","clarify","classic","client","climate","coalition","code","collapse","colleague","colony","combat","combine","comfort","command","comment","commission","commit","commodity","communicate","community","companion","compensate","compete","complain","complex","component","concentrate"];
         const M = ["放弃","能力","在国外","缺席","绝对的","吸收","抽象的","丰富的","学术的","加速","接受","进入/访问","陪伴","完成","账户/解释","准确的","指控","实现","承认","获得","适应","足够的","调整","管理","钦佩","承认","收养/采纳","前进","优势","冒险","做广告","建议","事务","影响","负担得起","议程","侵略的/好斗的","协议","农业","帮助","目标","警觉的","分配","改变","替代的","使惊奇","野心","分析","祖先","锚/主播","古代的","周年纪念","宣布","每年的","预期","焦虑","明显的","呼吁/吸引","食欲","电器","申请/应用","申请/应用","预约","欣赏/感激","接近/方法","适当的","批准","出现","安排","逮捕","人造的","方面","集合/组装","评估","分配","帮助","联系/同事","假设","气氛/大气","附上","达到","尝试","参加","态度","吸引","观众","权威","可用的","大街","平均的","避免","意识到","备份/支持","细菌","平衡","禁止","障碍","战斗","代表","表现","属于","弯曲","好处/有益于","背叛","十亿","捆绑","刀片","责怪","空白的","爆炸","混合","祝福","阻塞","开花","木板/董事会","吹嘘","纽带/债券","繁荣","边界","使厌烦","借入","弹跳","跳跃/限制","品牌","违反","突破","繁殖","简短的","广播","预算","负担","爆发","橱柜/内阁","计算","运动/战役","有能力的","容量/能力","捕获","碳","职业","货物","目录","类别","停止","挑战","冠军","频道/渠道","角色/性格","收费/指控","慈善","图表","追赶","化学的","主要的/首领","慢性的","情况","公民","民用的/文明的","声称/索赔","澄清","经典的","客户","气候","联盟","代码/密码","倒塌","同事","殖民地","战斗","结合","安慰/舒适","命令","评论","佣金/委员会","犯/承诺","商品","交流","社区","同伴","补偿","竞争","抱怨","复杂的","组件","集中"];
         const E = ["He abandoned his plan.","She has great ability.","He studied abroad.","His absence was noted.","That's absolute nonsense.","Plants absorb water.","Abstract art is hard.","Abundant resources.","Academic background.","The car accelerated.","She accepted the gift.","Access the internet.","I'll accompany you.","We accomplished our task.","He gave an account of the event.","Accurate measurement.","He accused her of lying.","She achieved her goal.","He acknowledged his mistake.","Acquire new skills.","Adapt to changes.","Adequate food.","Adjust the mirror.","The administration building.","I admire her courage.","He admitted his error.","Adopt a child.","Technology advances.","Take advantage of.","An exciting adventure.","Advertise on TV.","Give me some advice.","A complicated affair.","Weather affects mood.","I can't afford a car.","What's on the agenda?","Aggressive behavior.","Reach an agreement.","Agriculture is important.","Provide aid.","His aim is to win.","Stay alert.","Allocate resources.","Alter the plan.","An alternative solution.","You amaze me.","She has ambition.","Analyse the data.","Our ancestors.","The ship dropped anchor.","Ancient history.","Wedding anniversary.","Announce the news.","Annual report.","We anticipate success.","Feeling anxiety.","Apparent reason.","Appeal for help.","Good appetite.","Home appliances.","Job application.","Apply for a job.","Doctor's appointment.","I appreciate your help.","A new approach.","Appropriate behavior.","Approve the plan.","A problem arose.","Arrange a meeting.","He was arrested.","Artificial intelligence.","An important aspect.","Assemble the team.","Assess the situation.","Assign tasks.","Assist the elderly.","Business associate.","I assume you're right.","Friendly atmosphere.","Attach the file.","Attain success.","An attempt to escape.","Attend a meeting.","Positive attitude.","Attract attention.","Large audience.","Local authority.","Available resources.","Fifth Avenue.","Average score.","Avoid mistakes.","Be aware of.","Backup your data.","Harmful bacteria.","Work-life balance.","Smoking ban.","Language barrier.","Win the battle.","On behalf of.","Behave yourself.","Belong to me.","Bend the wire.","Health benefits.","Betray a friend.","Two billion dollars.","Bind the books.","Razor blade.","Blame yourself.","Blank page.","Bomb blast.","Blend the colors.","God bless you.","Road block.","Flowers bloom.","Notice board.","Boast about it.","Family bond.","Economic boom.","National border.","The lecture bored me.","Borrow a book.","Bounce the ball.","Bound for glory.","Famous brand.","Breach of contract.","Scientific breakthrough.","Breed dogs.","Brief introduction.","Live broadcast.","Family budget.","Financial burden.","Burst into tears.","Kitchen cabinet.","Calculate the cost.","Election campaign.","Capable of doing.","Full capacity.","Capture the moment.","Carbon dioxide.","Career development.","Cargo ship.","Product catalogue.","Different categories.","Cease fire.","Accept the challenge.","World champion.","TV channel.","Main character.","Free of charge.","Charity work.","Bar chart.","Chase the dream.","Chemical reaction.","Chief editor.","Chronic disease.","Under the circumstances.","Senior citizen.","Civil engineering.","Insurance claim.","Clarify the issue.","Classic music.","Client service.","Climate change.","Political coalition.","Dress code.","Bridge collapse.","Friendly colleague.","Ant colony.","Combat poverty.","Combine efforts.","Comfort zone.","Take command.","Leave a comment.","Sales commission.","Commit a crime.","Commodity prices.","Communicate effectively.","Local community.","Travel companion.","Compensate for loss.","Compete with others.","Complain about service.","Complex problem.","Key component.","Concentrate on work."];
-
-        function buildVocab() {
-            const arr = [];
-            for (let i = 0; i < W.length; i++) arr.push({word:W[i], meaning:M[i], example:E[i]});
-            return arr;
-        }
+        function buildVocab() { const arr=[]; for(let i=0;i<W.length;i++) arr.push({word:W[i],meaning:M[i],example:E[i]}); return arr; }
         const BUILT_IN = buildVocab();
 
-        // ==================== 全局变量 ====================
+        // ==================== 全局状态 ====================
         let vocabulary = [];
         let progress = JSON.parse(localStorage.getItem('vocab_progress')) || {
-            studied_words: [], correct_count: 0, wrong_count: 0,
-            test_history: [], wrong_words: [], collections: {}
+            studied_words:[], correct_count:0, wrong_count:0, test_history:[], wrong_words:[], collections:{}
         };
         let currentIndex = 0;
-        let testQuestions = [], testIndex = 0, testScore = 0, testWrongWords = [];
-        let reviewQuestions = [], reviewIndex = 0, reviewScore = 0;
+        let autoSpeak = false;
 
-        function saveProgress() { localStorage.setItem('vocab_progress', JSON.stringify(progress)); }
-        function loadUserWords() { return JSON.parse(localStorage.getItem('user_vocabulary')) || []; }
-        function saveUserWords(words) { localStorage.setItem('user_vocabulary', JSON.stringify(words)); }
+        // 测试/复习相关临时变量
+        let testQuestions=[], testIndex=0, testScore=0, testWrongWords=[];
+        let reviewQuestions=[], reviewIndex=0, reviewScore=0;
 
-        function mergeAndShuffle() {
+        function saveProgress(){ localStorage.setItem('vocab_progress', JSON.stringify(progress)); }
+        function loadUserWords(){ return JSON.parse(localStorage.getItem('user_vocabulary')) || []; }
+        function saveUserWords(words){ localStorage.setItem('user_vocabulary', JSON.stringify(words)); }
+
+        function mergeAndShuffle(){
             const userWords = loadUserWords();
             const all = BUILT_IN.concat(userWords);
-            for (let i = all.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
+            for(let i=all.length-1; i>0; i--){
+                const j = Math.floor(Math.random()*(i+1));
                 [all[i], all[j]] = [all[j], all[i]];
             }
             return all;
         }
 
-        function loadVocabulary() {
+        function loadVocabulary(){
             vocabulary = mergeAndShuffle();
-            if (vocabulary.length > 0) loadStudyWord(0);
+            if(vocabulary.length>0) loadStudyWord(0);
         }
 
-        function switchTab(tab, btn) {
-            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        // ==================== 选项卡切换 ====================
+        function switchTab(tab, btn){
+            document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
             btn.classList.add('active');
-            ['study','add','mywords','test','review','stats'].forEach(id => {
-                document.getElementById(id+'-panel').classList.add('hidden');
-            });
+            ['study','add','mywords','test','review','stats'].forEach(id=>document.getElementById(id+'-panel').classList.add('hidden'));
             document.getElementById(tab+'-panel').classList.remove('hidden');
-            if (tab === 'mywords') renderUserWords();
-            if (tab === 'stats') renderStats();
+            if(tab==='mywords') renderUserWords();
+            if(tab==='stats') renderStats();
         }
 
-        // 学习相关函数（保持原样）
-        function loadStudyWord(index) {
-            if (vocabulary.length === 0) return;
-            currentIndex = ((index % vocabulary.length) + vocabulary.length) % vocabulary.length;
+        // ==================== 学习功能 ====================
+        function loadStudyWord(index){
+            if(vocabulary.length===0) return;
+            currentIndex = ((index%vocabulary.length)+vocabulary.length)%vocabulary.length;
             const w = vocabulary[currentIndex];
             document.getElementById('study-word').textContent = w.word;
             document.getElementById('study-meaning').textContent = w.meaning;
-            document.getElementById('study-example').textContent = '📝 ' + w.example;
+            document.getElementById('study-example').textContent = '📝 '+w.example;
             document.getElementById('study-progress').textContent = `${currentIndex+1} / ${vocabulary.length}`;
             const collected = progress.collections && progress.collections[w.word];
-            document.getElementById('collect-badge').innerHTML = collected ? '<span class="badge badge-star">⭐ 已收藏</span>' : '';
+            document.getElementById('collect-badge').innerHTML = collected ? '<span class="badge">⭐ 已收藏</span>' : '';
             document.getElementById('collect-btn').textContent = collected ? '★' : '☆';
+            if(autoSpeak) speak(w.word);
         }
-        function nextWord() { loadStudyWord(currentIndex + 1); }
-        function prevWord() { loadStudyWord(currentIndex - 1); }
-        function toggleCollect() { /* 与之前相同 */ }
-        function markLearned() { /* 与之前相同 */ }
+        function nextWord(){ loadStudyWord(currentIndex+1); }
+        function prevWord(){ loadStudyWord(currentIndex-1); }
+        function toggleCollect(){
+            if(vocabulary.length===0) return;
+            const w = vocabulary[currentIndex];
+            if(!progress.collections) progress.collections={};
+            if(progress.collections[w.word]) delete progress.collections[w.word];
+            else progress.collections[w.word] = {word:w.word, meaning:w.meaning, example:w.example, date:new Date().toISOString().slice(0,10)};
+            saveProgress();
+            loadStudyWord(currentIndex);
+        }
+        function markLearned(){
+            if(vocabulary.length===0) return;
+            const word = vocabulary[currentIndex].word;
+            if(!progress.studied_words.includes(word)){
+                progress.studied_words.push(word);
+                saveProgress();
+                alert('✅ 已标记为已学会！');
+            }
+        }
 
-        // ==================== Excel 导入功能 ====================
-        function importExcel() {
+        // ==================== 语音朗读 ====================
+        function speak(text){
+            if(!window.speechSynthesis) return;
+            speechSynthesis.cancel();
+            const u = new SpeechSynthesisUtterance(text);
+            u.lang = 'en-US';
+            u.rate = 0.9;
+            speechSynthesis.speak(u);
+        }
+        function speakWord(){ if(vocabulary.length>0) speak(vocabulary[currentIndex].word); }
+        function speakExample(){ if(vocabulary.length>0) speak(vocabulary[currentIndex].example); }
+        function toggleAutoSpeak(){ autoSpeak = document.getElementById('auto-speak').checked; }
+
+        // ==================== 单条添加 ====================
+        function addWord(){
+            const word = document.getElementById('new-word').value.trim();
+            const meaning = document.getElementById('new-meaning').value.trim();
+            const example = document.getElementById('new-example').value.trim() || '暂无例句';
+            if(!word||!meaning){ alert('单词和释义不能为空'); return; }
+            const userWords = loadUserWords();
+            if(userWords.some(w=>w.word===word)){ alert('该单词已存在'); return; }
+            userWords.push({word, meaning, example});
+            saveUserWords(userWords);
+            vocabulary = mergeAndShuffle();
+            loadStudyWord(0);
+            document.getElementById('new-word').value='';
+            document.getElementById('new-meaning').value='';
+            document.getElementById('new-example').value='';
+            alert(`✅ 已添加 "${word}"`);
+        }
+
+        // ==================== Excel导入 ====================
+        function importExcel(){
             const fileInput = document.getElementById('excel-file');
             const status = document.getElementById('import-status');
-            if (!fileInput.files || fileInput.files.length === 0) {
-                status.textContent = '请选择文件';
-                return;
-            }
+            if(!fileInput.files || fileInput.files.length===0){ status.textContent='请选择文件'; return; }
             const file = fileInput.files[0];
             const reader = new FileReader();
-            reader.onload = function(e) {
-                try {
+            reader.onload = function(e){
+                try{
                     const data = new Uint8Array(e.target.result);
-                    const workbook = XLSX.read(data, {type: 'array'});
-                    const firstSheet = workbook.SheetNames[0];
-                    const worksheet = workbook.Sheets[firstSheet];
-                    const json = XLSX.utils.sheet_to_json(worksheet, {header: 1});
-
-                    if (json.length < 2) {
-                        status.textContent = '文件为空或没有数据';
-                        return;
-                    }
-
+                    const workbook = XLSX.read(data, {type:'array'});
+                    const sheet = workbook.Sheets[workbook.SheetNames[0]];
+                    const json = XLSX.utils.sheet_to_json(sheet, {header:1});
+                    if(json.length<2){ status.textContent='文件为空或没有数据'; return; }
                     const newWords = [];
-                    for (let i = 1; i < json.length; i++) {
+                    for(let i=1; i<json.length; i++){
                         const row = json[i];
-                        if (!row || row.length < 2) continue;
-                        const word = String(row[0] || '').trim();
-                        const meaning = String(row[1] || '').trim();
+                        if(!row || row.length<2) continue;
+                        const word = String(row[0]||'').trim();
+                        const meaning = String(row[1]||'').trim();
                         const example = row[2] ? String(row[2]).trim() : '暂无例句';
-                        if (word && meaning) {
-                            newWords.push({word, meaning, example});
-                        }
+                        if(word && meaning) newWords.push({word, meaning, example});
                     }
-
-                    if (newWords.length === 0) {
-                        status.textContent = '未识别到有效单词';
-                        return;
-                    }
-
+                    if(newWords.length===0){ status.textContent='未识别到有效单词'; return; }
                     const userWords = loadUserWords();
-                    let addedCount = 0;
-                    newWords.forEach(w => {
-                        if (!userWords.some(uw => uw.word === w.word)) {
+                    let added = 0;
+                    newWords.forEach(w=>{
+                        if(!userWords.some(uw=>uw.word===w.word)){
                             userWords.push(w);
-                            addedCount++;
+                            added++;
                         }
                     });
                     saveUserWords(userWords);
                     vocabulary = mergeAndShuffle();
                     loadStudyWord(0);
-                    status.textContent = `成功导入 ${addedCount} 个新单词（跳过 ${newWords.length - addedCount} 个重复）`;
+                    status.textContent = `成功导入 ${added} 个新单词（跳过 ${newWords.length-added} 个重复）`;
                     fileInput.value = '';
-                } catch (err) {
-                    status.textContent = '解析失败：' + err.message;
-                }
+                }catch(err){ status.textContent='解析失败：'+err.message; }
             };
             reader.readAsArrayBuffer(file);
         }
 
-        // 测试、复习、统计函数（保持原样，此处省略以节约空间）
-        // ... 请补充完整之前的功能函数 ...
+        // ==================== 我的词库渲染 ====================
+        function renderUserWords(){
+            const userWords = loadUserWords();
+            const div = document.getElementById('user-words-list');
+            if(userWords.length===0){
+                div.innerHTML = '<p style="text-align:center;color:#95a5a6;padding:20px;">你还没有添加任何单词</p>';
+                return;
+            }
+            let html = '';
+            userWords.forEach((w,i)=>{
+                html += `<div class="list-item"><span><b>${w.word}</b> - ${w.meaning}</span>
+                <button class="btn btn-red" style="padding:4px 10px;font-size:12px;" onclick="deleteUserWord(${i})">删除</button></div>`;
+            });
+            div.innerHTML = html;
+        }
+        function deleteUserWord(index){
+            const userWords = loadUserWords();
+            userWords.splice(index,1);
+            saveUserWords(userWords);
+            vocabulary = mergeAndShuffle();
+            loadStudyWord(0);
+            renderUserWords();
+        }
+        function clearUserWords(){
+            if(confirm('确定清空所有自定义单词吗？内置词库不受影响。')){
+                localStorage.removeItem('user_vocabulary');
+                vocabulary = mergeAndShuffle();
+                loadStudyWord(0);
+                renderUserWords();
+            }
+        }
 
-        // 初始化
+        // ==================== 测试模式 ====================
+        function startTest(){
+            if(vocabulary.length<4){ alert('单词不足（至少4个）'); return; }
+            const sample = [...vocabulary].sort(()=>Math.random()-0.5).slice(0, Math.min(10, vocabulary.length));
+            testQuestions = sample.map(w=>{
+                const correct = w.meaning;
+                const others = vocabulary.filter(v=>v.meaning!==correct).map(v=>v.meaning);
+                const options = [correct];
+                for(let i=0; i<3; i++) options.push(others.splice(Math.floor(Math.random()*others.length),1)[0]);
+                for(let i=options.length-1; i>0; i--){ const j=Math.floor(Math.random()*(i+1)); [options[i],options[j]]=[options[j],options[i]]; }
+                return {word:w.word, options, correct};
+            });
+            testIndex=0; testScore=0; testWrongWords=[];
+            showTestQuestion();
+        }
+        function showTestQuestion(){
+            if(testIndex>=testQuestions.length){ showTestResult(); return; }
+            const q = testQuestions[testIndex];
+            let html = `<p style="font-size:22px;margin-bottom:10px;">
+                <b>${q.word}</b> <button class="btn btn-blue" style="padding:4px 8px;font-size:14px;" onclick="speak('${q.word.replace(/'/g, "\\'")}')">🔊</button>
+            </p><p class="progress-text">${testIndex+1}/${testQuestions.length}</p>`;
+            q.options.forEach((opt,i)=> html += `<button class="option-btn" onclick="checkTestAnswer(${i}, '${opt.replace(/'/g, "\\'")}')">${String.fromCharCode(65+i)}. ${opt}</button>`);
+            document.getElementById('test-content').innerHTML = html;
+        }
+        function checkTestAnswer(idx, selected){
+            const q = testQuestions[testIndex];
+            if(selected===q.correct) testScore++; else testWrongWords.push(q.word);
+            const btns = document.querySelectorAll('.option-btn');
+            btns.forEach(b=>{ b.disabled=true; if(b.textContent.includes(q.correct)) b.classList.add('correct'); if(b.textContent.includes(selected)&&selected!==q.correct) b.classList.add('wrong'); });
+            document.getElementById('test-content').innerHTML += `<div style="margin-top:15px;"><button class="btn btn-blue" onclick="nextTestQuestion()">继续 ➡</button></div>`;
+        }
+        function nextTestQuestion(){ testIndex++; showTestQuestion(); }
+        function showTestResult(){
+            const pct = testQuestions.length ? (testScore/testQuestions.length*100) : 0;
+            document.getElementById('test-content').innerHTML = `
+                <p style="font-size:30px;color:#27ae60;">${testScore}/${testQuestions.length}</p>
+                <p>正确率 ${pct.toFixed(1)}%</p>
+                <p>${pct>=90?'🌟太棒了！':pct>=70?'💪不错！':'📚加油！'}</p>
+                <button class="btn btn-blue" onclick="startTest()">再来一次</button>`;
+            progress.correct_count += testScore;
+            progress.wrong_count += testQuestions.length - testScore;
+            testWrongWords.forEach(w=>{ if(!progress.wrong_words.includes(w)) progress.wrong_words.push(w); });
+            progress.test_history.push({date:new Date().toISOString().slice(0,16).replace('T',' '), score:testScore, total:testQuestions.length});
+            saveProgress();
+        }
+
+        // ==================== 复习模式 ====================
+        function startReview(){
+            if(progress.wrong_words.length===0){ alert('暂无错词！'); return; }
+            const list = vocabulary.filter(w=>progress.wrong_words.includes(w.word));
+            reviewQuestions = list.map(w=>{
+                const correct = w.meaning;
+                const others = vocabulary.filter(v=>v.meaning!==correct).map(v=>v.meaning);
+                const options = [correct];
+                for(let i=0; i<3; i++) options.push(others.splice(Math.floor(Math.random()*others.length),1)[0]);
+                for(let i=options.length-1; i>0; i--){ const j=Math.floor(Math.random()*(i+1)); [options[i],options[j]]=[options[j],options[i]]; }
+                return {word:w.word, options, correct};
+            });
+            reviewIndex=0; reviewScore=0;
+            showReviewQuestion();
+        }
+        function showReviewQuestion(){
+            if(reviewIndex>=reviewQuestions.length){ showReviewResult(); return; }
+            const q = reviewQuestions[reviewIndex];
+            let html = `<p style="font-size:22px;margin-bottom:10px;">
+                🔄 <b>${q.word}</b> <button class="btn btn-blue" style="padding:4px 8px;font-size:14px;" onclick="speak('${q.word.replace(/'/g, "\\'")}')">🔊</button>
+            </p><p class="progress-text">${reviewIndex+1}/${reviewQuestions.length}</p>`;
+            q.options.forEach((opt,i)=> html += `<button class="option-btn" onclick="checkReviewAnswer(${i}, '${opt.replace(/'/g, "\\'")}')">${String.fromCharCode(65+i)}. ${opt}</button>`);
+            document.getElementById('review-content').innerHTML = html;
+        }
+        function checkReviewAnswer(idx, selected){
+            const q = reviewQuestions[reviewIndex];
+            if(selected===q.correct){
+                reviewScore++;
+                progress.wrong_words = progress.wrong_words.filter(w=>w!==q.word);
+                saveProgress();
+            }
+            const btns = document.querySelectorAll('.option-btn');
+            btns.forEach(b=>{ b.disabled=true; if(b.textContent.includes(q.correct)) b.classList.add('correct'); if(b.textContent.includes(selected)&&selected!==q.correct) b.classList.add('wrong'); });
+            document.getElementById('review-content').innerHTML += `<div style="margin-top:15px;"><button class="btn btn-blue" onclick="nextReviewQuestion()">继续 ➡</button></div>`;
+        }
+        function nextReviewQuestion(){ reviewIndex++; showReviewQuestion(); }
+        function showReviewResult(){
+            const pct = reviewQuestions.length ? (reviewScore/reviewQuestions.length*100) : 0;
+            document.getElementById('review-content').innerHTML = `
+                <p style="font-size:30px;color:#27ae60;">${reviewScore}/${reviewQuestions.length}</p>
+                <p>正确率 ${pct.toFixed(1)}%</p>
+                <button class="btn btn-blue" onclick="startReview()">再来一次</button>`;
+        }
+
+        // ==================== 统计 ====================
+        function renderStats(){
+            const studied = progress.studied_words.length;
+            const correct = progress.correct_count;
+            const wrong = progress.wrong_count;
+            const totalAns = correct+wrong;
+            const pct = totalAns ? (correct/totalAns*100).toFixed(1) : 0;
+            const collected = progress.collections ? Object.keys(progress.collections).length : 0;
+            const wrongCount = progress.wrong_words.length;
+            document.getElementById('stats-grid').innerHTML = `
+                <div class="stat-card"><div class="stat-num" style="color:#3498db;">${studied}</div>已学</div>
+                <div class="stat-card"><div class="stat-num" style="color:#f39c12;">${collected}</div>收藏</div>
+                <div class="stat-card"><div class="stat-num" style="color:#2ecc71;">${pct}%</div>正确率</div>
+                <div class="stat-card"><div class="stat-num" style="color:#e74c3c;">${wrongCount}</div>待复习</div>
+            `;
+            drawPie(correct, wrong);
+        }
+        function drawPie(correct, wrong){
+            const canvas = document.getElementById('pie-chart');
+            const ctx = canvas.getContext('2d');
+            ctx.clearRect(0,0,canvas.width,canvas.height);
+            const total = correct+wrong;
+            if(total===0){ ctx.fillStyle='#95a5a6'; ctx.font='14px Arial'; ctx.textAlign='center'; ctx.fillText('暂无数据',140,100); return; }
+            const cx=100, cy=100, r=70;
+            const angle = (correct/total)*Math.PI*2;
+            ctx.beginPath(); ctx.moveTo(cx,cy); ctx.arc(cx,cy,r,-Math.PI/2,-Math.PI/2+angle); ctx.fillStyle='#3498db'; ctx.fill();
+            ctx.beginPath(); ctx.moveTo(cx,cy); ctx.arc(cx,cy,r,-Math.PI/2+angle,Math.PI*1.5); ctx.fillStyle='#e74c3c'; ctx.fill();
+            ctx.fillStyle='#333'; ctx.font='13px Arial'; ctx.fillText('正确 '+correct, cx+r+15, cy-10);
+            ctx.fillText('错误 '+wrong, cx+r+15, cy+15);
+        }
+
+        // ==================== 启动 ====================
         loadVocabulary();
     </script>
 </body>
