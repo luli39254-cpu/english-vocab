@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>📚 英语背单词</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: Arial, sans-serif; background: #f5f5f5; min-height: 100vh; }
+
+        .header { background: #2c3e50; color: white; padding: 15px; text-align: center; font-size: 20px; font-weight: bold; }
+
+        .tab-bar { display: flex; background: white; border-bottom: 2px solid #ecf0f1; }
+        .tab { flex: 1; padding: 12px; text-align: center; cursor: pointer; font-size: 14px; border: none; background: white; color: #7f8c8d; }
+        .tab.active { color: #3498db; border-bottom: 3px solid #3498db; font-weight: bold; }
+
+        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+        .card { background: white; border-radius: 12px; padding: 30px; margin: 15px 0; box-shadow: 0 2px 10px rgba(0,0,0,0.1); text-align: center; }
+
+        .word { font-size: 42px; font-weight: bold; color: #2c3e50; margin: 15px 0; }
+        .meaning { font-size: 22px; color: #27ae60; margin: 10px 0; }
+        .example { font-size: 14px; color: #7f8c8d; font-style: italic; margin: 10px 0; }
+
+        .btn { padding: 12px 24px; border: none; border-radius: 8px; font-size: 14px; cursor: pointer; margin: 5px; color: white; }
+        .btn-blue { background: #3498db; }
+        .btn-green { background: #2ecc71; }
+        .btn-orange { background: #f39c12; }
+        .btn-red { background: #e74c3c; }
+        .btn-gray { background: #95a5a6; }
+
+        .option-btn { display: block; width: 100%; padding: 14px; margin: 8px 0; border: 2px solid #ecf0f1; border-radius: 8px; background: white; font-size: 16px; cursor: pointer; text-align: left; }
+        .option-btn.correct { background: #2ecc71; color: white; border-color: #2ecc71; }
+        .option-btn.wrong { background: #e74c3c; color: white; border-color: #e74c3c; }
+
+        .progress { font-size: 12px; color: #95a5a6; margin: 10px 0; }
+        .badge { display: inline-block; padding: 4px 10px; border-radius: 12px; font-size: 12px; margin: 2px; }
+        .badge-star { background: #fef3cd; color: #f39c12; }
+
+        .list-item { padding: 12px; border-bottom: 1px solid #ecf0f1; cursor: pointer; }
+        .list-item:hover { background: #f8f9fa; }
+
+        .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .stat-card { background: white; padding: 15px; border-radius: 8px; text-align: center; box-shadow: 0 1px 5px rgba(0,0,0,0.1); }
+        .stat-num { font-size: 28px; font-weight: bold; }
+
+        canvas { max-width: 100%; margin: 10px 0; }
+
+        .hidden { display: none; }
+    </style>
+</head>
+<body>
+    <div class="header">📚 英语背单词</div>
+
+    <div class="tab-bar">
+        <button class="tab active" onclick="switchTab('study')">📖 学习</button>
+        <button class="tab" onclick="switchTab('collect')">⭐ 收藏</button>
+        <button class="tab" onclick="switchTab('test')">✍️ 测试</button>
+        <button class="tab" onclick="switchTab('review')">🔄 复习</button>
+        <button class="tab" onclick="switchTab('stats')">📊 统计</button>
+    </div>
+
+    <div class="container">
+        <!-- 学习模式 -->
+        <div id="study-panel">
+            <div class="card">
+                <div id="collect-badge"></div>
+                <div class="word" id="study-word">loading...</div>
+                <div class="meaning" id="study-meaning"></div>
+                <div class="example" id="study-example"></div>
+                <div class="progress" id="study-progress"></div>
+                <div style="margin-top:15px;">
+                    <button class="btn btn-blue" onclick="prevWord()">⬅ 上一个</button>
+                    <button class="btn btn-blue" onclick="nextWord()">下一个 ➡</button>
+                    <button class="btn btn-orange" id="collect-btn" onclick="toggleCollect()">⭐ 收藏</button>
+                    <button class="btn btn-green" onclick="markLearned()">✔ 已学会</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 收藏面板 -->
+        <div id="collect-panel" class="hidden">
+            <div class="card">
+                <h3 style="margin-bottom:15px;">⭐ 收藏单词</h3>
+                <div id="collection-list"></div>
+                <button class="btn btn-red" onclick="clearCollections()" style="margin-top:10px;">清空收藏</button>
+            </div>
+        </div>
+
+        <!-- 测试面板 -->
+        <div id="test-panel" class="hidden">
+            <div class="card" id="test-card">
+                <h3 style="margin-bottom:15px;">✍️ 单词测试</h3>
+                <div id="test-content">
+                    <button class="btn btn-blue" onclick="startTest()">开始测试</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 复习面板 -->
+        <div id="review-panel" class="hidden">
+            <div class="card">
+                <h3 style="margin-bottom:15px;">🔄 复习错词</h3>
+                <div id="review-content">
+                    <button class="btn btn-blue" onclick="startReview()">开始复习</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 统计面板 -->
+        <div id="stats-panel" class="hidden">
+            <div class="card">
+                <h3 style="margin-bottom:15px;">📊 学习统计</h3>
+                <div class="stats-grid" id="stats-grid"></div>
+                <canvas id="stats-chart" width="350" height="200"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentIndex = 0;
+        let totalWords = 0;
+        let currentWord = null;
+        let testQuestions = [];
+        let testIndex = 0;
+        let testScore = 0;
+        let wrongWords = [];
+        let reviewQuestions = [];
+        let reviewIndex = 0;
+        let reviewScore = 0;
+
+        // ==================== 标签切换 ====================
+        function switchTab(tab) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            event.target.classList.add('active');
+
+            ['study', 'collect', 'test', 'review', 'stats'].forEach(id => {
+                document.getElementById(id + '-panel').classList.add('hidden');
+            });
+            document.getElementById(tab + '-panel').classList.remove('hidden');
+
+            if (tab === 'collect') loadCollections();
+            if (tab === 'stats') loadStats();
+        }
+
+        // ==================== 学习模式 ====================
+        function loadStudyWord(index) {
+            fetch('/api/study_word?index=' + index)
+                .then(r => r.json())
+                .then(data => {
+                    if (data.error) return;
+                    currentWord = data.word;
+                    currentIndex = data.index;
+                    totalWords = data.total;
+
+                    document.getElementById('study-word').textContent = data.word.word;
+                    document.getElementById('study-meaning').textContent = data.word.meaning;
+                    document.getElementById('study-example').textContent = '📝 ' + (data.word.example || '暂无例句');
+                    document.getElementById('study-progress').textContent =
+                        '第 ' + (data.index + 1) + ' / ' + data.total + ' 个';
+
+                    let badge = document.getElementById('collect-badge');
+                    badge.innerHTML = data.is_collected ? '<span class="badge badge-star">⭐ 已收藏</span>' : '';
+
+                    let btn = document.getElementById('collect-btn');
+                    btn.textContent = data.is_collected ? '⭐ 取消收藏' : '⭐ 收藏';
+                });
+        }
+
+        function nextWord() {
+            if (totalWords > 0) {
+                currentIndex = (currentIndex + 1) % totalWords;
+                loadStudyWord(currentIndex);
+            }
+        }
+
+        function prevWord() {
+            if (totalWords > 0) {
+                currentIndex = (currentIndex - 1 + totalWords) % totalWords;
+                loadStudyWord(currentIndex);
+            }
+        }
+
+        function toggleCollect() {
+            if (!currentWord) return;
+            fetch('/api/toggle_collect', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    word: currentWord.word,
+                    meaning: currentWord.meaning,
+                    example: currentWord.example || ''
+                })
+            })
+            .then(r => r.json())
+            .then(data => {
+                loadStudyWord(currentIndex);
+                alert(data.collected ? '已收藏！' : '已取消收藏');
+            });
+        }
+
+        function markLearned() {
+            if (!currentWord) return;
+            fetch('/api/mark_learned', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({word: currentWord.word})
+            })
+            .then(r => r.json())
+            .then(data => {
+                alert('已标记为已学会！');
+            });
+        }
+
+        // ==================== 收藏 ====================
+        function loadCollections() {
+            fetch('/api/collections')
+                .then(r => r.json())
+                .then(data => {
+                    let html = '';
+                    if (data.collections.length === 0) {
+                        html = '<p style="color:#95a5a6;">暂无收藏单词</p>';
+                    } else {
+                        data.collections.forEach(item => {
+                            html += `<div class="list-item">${item.word} - ${item.meaning}</div>`;
+                        });
+                    }
+                    document.getElementById('collection-list').innerHTML = html;
+                });
+        }
+
+        function clearCollections() {
+            if (confirm('确定清空所有收藏？')) {
+                fetch('/api/clear_collections', {method: 'POST'})
+                    .then(r => r.json())
+                    .then(data => {
+                        loadCollections();
+                        alert('已清空！');
+                    });
+            }
+        }
+
+        // ==================== 测试模式 ====================
+        function startTest() {
+            fetch('/api/test_questions')
+                .then(r => r.json())
+                .then(data => {
+                    if (data.error) {
+                        alert(data.error);
+                        return;
+                    }
+                    testQuestions = data.questions;
+                    testIndex = 0;
+                    testScore = 0;
+                    wrongWords = [];
+                    showTestQuestion();
+                });
+        }
+
+        function showTestQuestion() {
+            if (testIndex >= testQuestions.length) {
+                showTestResult();
+                return;
+            }
+
+            let q = testQuestions[testIndex];
+            let html = `<p style="font-size:18px;margin-bottom:15px;">❓ <b>${q.word}</b> 的中文意思是？</p>`;
+            html += `<p style="color:#95a5a6;margin-bottom:10px;">第 ${testIndex + 1} / ${testQuestions.length} 题</p>`;
+
+            q.options.forEach((opt, i) => {
+                html += `<button class="option-btn" onclick="checkAnswer(${i}, '${opt}')">${String.fromCharCode(65+i)}. ${opt}</button>`;
+            });
+
+            document.getElementById('test-content').innerHTML = html;
+        }
+
+        function checkAnswer(idx, selected) {
+            let q = testQuestions[testIndex];
+            let correct = q.correct;
+
+            if (selected === correct) {
+                testScore++;
+            } else {
+                wrongWords.push(q.word);
+            }
+
+            // 高亮选项
+            let buttons = document.querySelectorAll('.option-btn');
+            buttons.forEach(btn => {
+                btn.disabled = true;
+                if (btn.textContent.includes(correct)) {
+                    btn.classList.add('correct');
+                }
+                if (btn.textContent.includes(selected) && selected !== correct) {
+                    btn.classList.add('wrong');
+                }
+            });
+
+            // 添加继续按钮
+            let div = document.createElement('div');
+            div.style.marginTop = '15px';
+            div.innerHTML = `<button class="btn btn-blue" onclick="nextTestQuestion()">继续 ➡</button>`;
+            document.getElementById('test-content').appendChild(div);
+        }
+
+        function nextTestQuestion() {
+            testIndex++;
+            showTestQuestion();
+        }
+
+        function showTestResult() {
+            let pct = testQuestions.length > 0 ? (testScore / testQuestions.length * 100) : 0;
+            let comment = pct >= 90 ? '🌟 太棒了！' : pct >= 70 ? '💪 不错！' : pct >= 50 ? '📚 继续加油！' : '📖 继续努力！';
+
+            let html = `<h3>🎉 测试完成！</h3>`;
+            html += `<p style="font-size:24px;color:#27ae60;">${testScore} / ${testQuestions.length}</p>`;
+            html += `<p style="color:#7f8c8d;">正确率：${pct.toFixed(1)}%</p>`;
+            html += `<p style="font-size:18px;">${comment}</p>`;
+            html += `<button class="btn btn-blue" onclick="startTest()">再来一次</button>`;
+
+            document.getElementById('test-content').innerHTML = html;
+
+            // 保存成绩
+            fetch('/api/submit_test', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    score: testScore,
+                    total: testQuestions.length,
+                    wrong_words: wrongWords
+                })
+            });
+        }
+
+        // ==================== 复习模式 ====================
+        function startReview() {
+            fetch('/api/review_questions')
+                .then(r => r.json())
+                .then(data => {
+                    if (data.error) {
+                        alert(data.error);
+                        return;
+                    }
+                    reviewQuestions = data.questions;
+                    reviewIndex = 0;
+                    reviewScore = 0;
+                    showReviewQuestion();
+                });
+        }
+
+        function showReviewQuestion() {
+            if (reviewIndex >= reviewQuestions.length) {
+                showReviewResult();
+                return;
+            }
+
+            let q = reviewQuestions[reviewIndex];
+            let html = `<p style="font-size:18px;margin-bottom:15px;">🔄 <b>${q.word}</b> 的意思？</p>`;
+            html += `<p style="color:#95a5a6;margin-bottom:10px;">第 ${reviewIndex + 1} / ${reviewQuestions.length} 题</p>`;
+
+            q.options.forEach((opt, i) => {
+                html += `<button class="option-btn" onclick="checkReviewAnswer(${i}, '${opt}')">${String.fromCharCode(65+i)}. ${opt}</button>`;
+            });
+
+            document.getElementById('review-content').innerHTML = html;
+        }
+
+        function checkReviewAnswer(idx, selected) {
+            let q = reviewQuestions[reviewIndex];
+            let correct = q.correct;
+
+            if (selected === correct) {
+                reviewScore++;
+                fetch('/api/remove_wrong_word', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({word: q.word})
+                });
+            }
+
+            let buttons = document.querySelectorAll('.option-btn');
+            buttons.forEach(btn => {
+                btn.disabled = true;
+                if (btn.textContent.includes(correct)) {
+                    btn.classList.add('correct');
+                }
+                if (btn.textContent.includes(selected) && selected !== correct) {
+                    btn.classList.add('wrong');
+                }
+            });
+
+            let div = document.createElement('div');
+            div.style.marginTop = '15px';
+            div.innerHTML = `<button class="btn btn-blue" onclick="nextReviewQuestion()">继续 ➡</button>`;
+            document.getElementById('review-content').appendChild(div);
+        }
+
+        function nextReviewQuestion() {
+            reviewIndex++;
+            showReviewQuestion();
+        }
+
+        function showReviewResult() {
+            let pct = reviewQuestions.length > 0 ? (reviewScore / reviewQuestions.length * 100) : 0;
+            let html = `<h3>🔄 复习完成！</h3>`;
+            html += `<p style="font-size:24px;color:#27ae60;">${reviewScore} / ${reviewQuestions.length}</p>`;
+            html += `<p style="color:#7f8c8d;">正确率：${pct.toFixed(1)}%</p>`;
+            html += `<button class="btn btn-blue" onclick="startReview()">再来一次</button>`;
+
+            document.getElementById('review-content').innerHTML = html;
+        }
+
+        // ==================== 统计 ====================
+        function loadStats() {
+            fetch('/api/progress')
+                .then(r => r.json())
+                .then(data => {
+                    let total = data.studied_words ? data.studied_words.length : 0;
+                    let correct = data.correct_count || 0;
+                    let wrong = data.wrong_count || 0;
+                    let totalAns = correct + wrong;
+                    let pct = totalAns > 0 ? (correct / totalAns * 100).toFixed(1) : 0;
+                    let collected = data.collections ? Object.keys(data.collections).length : 0;
+                    let wrongCount = data.wrong_words ? data.wrong_words.length : 0;
+
+                    document.getElementById('stats-grid').innerHTML = `
+                        <div class="stat-card"><div class="stat-num" style="color:#3498db;">${total}</div>已学单词</div>
+                        <div class="stat-card"><div class="stat-num" style="color:#f39c12;">${collected}</div>收藏单词</div>
+                        <div class="stat-card"><div class="stat-num" style="color:#2ecc71;">${pct}%</div>正确率</div>
+                        <div class="stat-card"><div class="stat-num" style="color:#e74c3c;">${wrongCount}</div>待复习错词</div>
+                    `;
+
+                    // 简单图表
+                    drawChart(correct, wrong);
+                });
+        }
+
+        function drawChart(correct, wrong) {
+            let canvas = document.getElementById('stats-chart');
+            let ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            let total = correct + wrong;
+            if (total === 0) {
+                ctx.fillStyle = '#95a5a6';
+                ctx.font = '14px Arial';
+                ctx.fillText('暂无答题数据', 120, 100);
+                return;
+            }
+
+            // 饼图
+            let cx = 120, cy = 100, r = 60;
+            let correctAngle = (correct / total) * Math.PI * 2;
+
+            ctx.beginPath();
+            ctx.moveTo(cx, cy);
+            ctx.arc(cx, cy, r, -Math.PI/2, -Math.PI/2 + correctAngle);
+            ctx.fillStyle = '#3498db';
+            ctx.fill();
+
+            ctx.beginPath();
+            ctx.moveTo(cx, cy);
+            ctx.arc(cx, cy, r, -Math.PI/2 + correctAngle, Math.PI * 1.5);
+            ctx.fillStyle = '#e74c3c';
+            ctx.fill();
+
+            // 图例
+            ctx.fillStyle = '#3498db';
+            ctx.fillRect(200, 70, 15, 15);
+            ctx.fillStyle = '#333';
+            ctx.font = '12px Arial';
+            ctx.fillText('正确 ' + correct, 220, 83);
+
+            ctx.fillStyle = '#e74c3c';
+            ctx.fillRect(200, 95, 15, 15);
+            ctx.fillStyle = '#333';
+            ctx.fillText('错误 ' + wrong, 220, 108);
+        }
+
+        // ==================== 初始化 ====================
+        loadStudyWord(0);
+    </script>
+</body>
+</html>
